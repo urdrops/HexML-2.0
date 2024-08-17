@@ -4,16 +4,6 @@ import serial
 import time
 
 
-class Vision:
-    def __init__(self):
-        pass
-
-
-class Connection:
-    def __init__(self):
-        pass
-
-
 # init obj and conf connection
 ser = serial.Serial('/dev/ttyACM0', 9600)
 
@@ -107,17 +97,17 @@ try:
             # Вывод координат
             center_x = round(map_value(center_x, 0, 1250, 40, 130))
             center_y = round(map_value(700 - center_y, 0, 680, 50, 100))
-            send_angles([center_x, center_y, 100, 70, 80, 110])
+            send_angles([center_x, center_y])
             print(f"Центр точки: ({center_x}, {center_y})")
 
             if random.randint(0, 50) == 8:
-                send_angles([center_x, center_y, 60, 120, 120, 70])  # close
+                send_angles([60, 120, 120, 70])  # close
                 time.sleep(0.1)
-                send_angles([center_x, center_y, 100, 70, 80, 110])  # open
+                send_angles([100, 70, 80, 110])  # open
                 time.sleep(0.1)
-                send_angles([center_x, center_y, 60, 120, 120, 70])  # close
+                send_angles([60, 120, 120, 70])  # close
                 time.sleep(0.1)
-                send_angles([center_x, center_y, 100, 70, 80, 110])  # open
+                send_angles([100, 70, 80, 110])  # open
 
         # Отображение результата
         cv2.imshow('HexML view', frame)

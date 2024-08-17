@@ -1,23 +1,24 @@
-from modules.vision.attention import Camera, FaceDetector, MotionDetector, VideoProcessor
-import face_recognition
-from modules.vision.face_recognizer import FaceRecognizer
+import asyncio
+from core.state import Context, ConcreteStateA, ConcreteStateB
+from modules.vision.eye_tracker import EyeTracker
 
 
-def main() -> None:
-    camera = Camera()
-    detectors = [FaceDetector(), MotionDetector()]
+async def main():
+    print("test states:")
+    context = Context(ConcreteStateA())
+    context.request()  # Выведет: Handling request in State A
+    context.set_state(ConcreteStateB())
+    context.request()  # Выведет: Handling request in State B
 
-    # Здесь нужно добавить известные лица
-    known_faces = {
-        "Person1": face_recognition.face_encodings(face_recognition.load_image_file("person1.jpg"))[0],
-        "Person2": face_recognition.face_encodings(face_recognition.load_image_file("person2.jpg"))[0],
-        # Добавьте больше известных лиц по необходимости
-    }
-
-    recognizer = FaceRecognizer(known_faces)
-    video_processor = VideoProcessor(camera, detectors, recognizer)
-    video_processor.run()
+    tracker = EyeTracker()
+    try:
+        await tracker.initialize()
+        await tracker.track()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        await tracker.shutdown()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -1,0 +1,28 @@
+# Vision libs & frameworks
+pyserial==3.5
+opencv-python==4.10.0.84
+numpy==1.26.4
+dlib==19.24.4
+face-recognition==1.3.0
+
+# Audio libs & frameworks
+pydub==0.25.1
+azure-cognitiveservices-speech
+pvporcupine~=3.0.2
+pyht==0.0.28
+
+# Intelligence libs & frameworks
+openai~=1.40.6
+groq==0.9.0
+
+# Common tools
+pandas==2.2.2
+keyboard==0.13.5
+pynput==1.7.7
+requests~=2.32.3
+PyAudio~=0.2.14
+python-dotenv~=1.0.1
+pvrecorder~=1.2.2
+typing_extensions~=4.12.2
+pvcobra~=2.0.2
+pvkoala~=2.0.1

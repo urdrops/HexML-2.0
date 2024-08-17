@@ -1,44 +1,46 @@
-import cv2
+import asyncio
+from abc import ABC, abstractmethod
 import face_recognition
 import numpy as np
+import time
 from typing import List, Tuple, Dict
-from attention import FrameProcessor
 
 
-class FaceRecognizer(FrameProcessor):
-    def __init__(self, known_faces: Dict[str, np.ndarray]):
-        self.known_face_encodings = list(known_faces.values())
-        self.known_face_names = list(known_faces.keys())
+# Интерфейс для распознавания лиц
+class FaceRecognizer(ABC):
+    @abstractmethod
+    async def recognize(self, frame: np.ndarray, face_locations: List[Tuple[int, int, int, int]]) -> str:
+        pass
 
-    def recognize(self, frame: np.ndarray) -> List[Tuple[str, Tuple[int, int, int, int]]]:
-        # Уменьшаем размер кадра для ускорения обработки
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-        rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
-        # Находим все лица на кадре
-        face_locations = face_recognition.face_locations(rgb_small_frame)
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+# Класс для распознавания лиц
+class SimpleFaceRecognizer(FaceRecognizer):
+    def __init__(self, known_face_encodings: List[np.ndarray], known_face_names: List[str]):
+        self.known_face_encodings = known_face_encodings
+        self.known_face_names = known_face_names
+        self.face_cache: Dict[bytes, Tuple[str, float]] = {}
 
-        face_names = []
+    async def recognize(self, frame: np.ndarray, face_locations: List[Tuple[int, int, int, int]]) -> str:
+        face_encodings = await asyncio.get_event_loop().run_in_executor(
+            None, face_recognition.face_encodings, frame, face_locations
+        )
+
+        current_time = time.time()
         for face_encoding in face_encodings:
-            # Сравниваем лицо с известными лицами
+            cache_key = face_encoding.tobytes()
+            cached_result = self.face_cache.get(cache_key)
+            if cached_result and current_time - cached_result[1] < 10:
+                return cached_result[0]
+
             matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-            name = "Unknown"
+            if any(matches):
+                face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
+                best_match_index = np.argmin(face_distances)
+                name = self.known_face_names[best_match_index]
+            else:
+                name = "Unknown"
 
-            if True in matches:
-                first_match_index = matches.index(True)
-                name = self.known_face_names[first_match_index]
+            self.face_cache[cache_key] = (name, current_time)
+            return name
 
-            face_names.append(name)
-
-        # Возвращаем к исходному масштабу
-        return [(name, (top * 4, right * 4, bottom * 4, left * 4))
-                for (top, right, bottom, left), name in zip(face_locations, face_names)]
-
-    def draw(self, frame: np.ndarray, recognitions: List[Tuple[str, Tuple[int, int, int, int]]]) -> np.ndarray:
-        for name, (top, right, bottom, left) in recognitions:
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.5, (255, 255, 255), 1)
-        return frame
+        return "Unknown"

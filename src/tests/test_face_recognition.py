@@ -9,7 +9,7 @@ known_face_encodings = []
 known_face_names = []
 
 # Пример добавления известных лиц
-image_of_person_1 = face_recognition.load_image_file("urdrops.jpg")
+image_of_person_1 = face_recognition.load_image_file("../known_faces/urdrops.jpg")
 person_1_encoding = face_recognition.face_encodings(image_of_person_1)[0]
 known_face_encodings.append(person_1_encoding)
 known_face_names.append("Person 1")

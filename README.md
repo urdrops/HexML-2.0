@@ -34,8 +34,8 @@ HexML is an intelligent entertaining AI assistant designed to interact with user
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/hexml.git
-   cd hexml
+   git clone https://github.com/urdrops/HexML-2.0.git
+   cd HexML-2.0
    ```
 
 2. **Build and run the Docker container**:
@@ -49,7 +49,7 @@ HexML is an intelligent entertaining AI assistant designed to interact with user
 
 4. **Run the Python script**:
    ```bash
-   python app/your_script.py
+   python src/main.py
    ```
 
 ### Usage

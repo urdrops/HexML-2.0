@@ -1,10 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерфейс Ассистента</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        body { margin: 0; display: flex; height: 100vh; }
+        #left-panel { width: 300px; padding: 20px; background-color: #f0f0f0; }
+        #right-panel { flex-grow: 1; }
+        button { display: block; width: 100%; margin-bottom: 10px; padding: 10px; font-size: 16px; }
+    </style>
 </head>
 <body>
+    <div id="left-panel">
+        <button onclick="handleClick('Настройка 1')">Настройка 1</button>
+        <button onclick="handleClick('Настройка 2')">Настройка 2</button>
+        <button onclick="handleClick('Настройка 3')">Настройка 3</button>
+    </div>
+    <div id="right-panel"></div>
 
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+        let scene, camera, renderer, controls;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, (window.innerWidth - 300) / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth - 300, window.innerHeight);
+            document.getElementById('right-panel').appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+
+            const light = new THREE.PointLight(0xffffff, 1, 100);
+            light.position.set(0, 0, 10);
+            scene.add(light);
+
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            camera.position.z = 5;
+
+            const loader = new STLLoader();
+            loader.load(
+                '3d-model.stl',
+                function (geometry) {
+                    console.log('STL загружен успешно');
+                    const material = new THREE.MeshPhongMaterial({color: 0xaaaaaa, specular: 0x111111, shininess: 200});
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.scale.set(0.1, 0.1, 0.1);
+                    mesh.rotation.x = -Math.PI / 2;
+                    scene.add(mesh);
+
+                    const box = new THREE.Box3().setFromObject(mesh);
+                    const size = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+
+                    camera.position.copy(center);
+                    camera.position.z += Math.max(size.x, size.y, size.z) * 2;
+                    controls.target.copy(center);
+                    controls.update();
+                },
+                function (xhr) {
+                    console.log((xhr.loaded / xhr.total * 100) + '% загружено');
+                },
+                function (error) {
+                    console.error('Ошибка при загрузке STL', error);
+                }
+            );
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.handleClick = function(setting) {
+            console.log('Выбрана настройка:', setting);
+            // Здесь будет код для отправки запроса на сервер
+        };
+
+        init();
+    </script>
 </body>
 </html>
