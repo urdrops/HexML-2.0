@@ -13,6 +13,7 @@ OPENAI_ASSISTANT_Ipath_to_your_audio_fileD = os.getenv("OPENAI_ASSISTANT_ID")
 client = OpenAI(api_key=OPENAI_TOKEN)
 
 thread = client.beta.threads.create()
+player.init()
 
 
 class EventHandler(AssistantEventHandler):
@@ -45,13 +46,11 @@ class EventHandler(AssistantEventHandler):
 # and stream the response.
 while True:
     text = input("\nyou > ")
-    start_time = time.perf_counter()
     message = client.beta.threads.messages.create(
                 thread_id=thread.id,
                 role="user",
                 content=text,
             )
-    print("message sended: ", time.perf_counter() - start_time)
     run_start = time.perf_counter()
     with client.beta.threads.runs.stream(
             thread_id=thread.id,

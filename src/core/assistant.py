@@ -1,19 +1,103 @@
+import time
+import numpy as np
+from mic_loop import AudioRecorder
 from src.modules.audio.stt import BaseSTT, WhisperSTT, UzbekVoiceSTT
-from src.modules.audio.tts import BaseTTS, ElevenLabsTTS, AzureTTS
-from src.modules.intelligence.llm import BaseLLM, OpenAIGPT, GroqLLM
+from src.modules.audio.tts import BaseTTS, AzureTTS, WhisperTTS
+from src.modules.intelligence.llm import BaseLLM, OpenAIGPT, GroqLLM, openai_client
+import pygame.mixer as player
+import playsound
+
+player.init()
+player.music.load("audio_files/think.mp3")
 
 
-class Assistant:
+class Assistant(AudioRecorder):
     def __init__(self, stt: BaseSTT, llm: BaseLLM, tts: BaseTTS):
+        super().__init__()
         self.stt = stt
         self.llm = llm
         self.tts = tts
 
-    async def process_audio_input(self, audio_data: bytes) -> str:
-        text = await self.stt.transcribe(audio_data)
-        response = await self.llm.generate_response(text)
-        audio_response = await self.tts.synthesize(response)
-        return audio_response
+    def voice_recording(self):
+        frames = []
+        is_first_iter = 1
+        is_recording = 0
+        start_recording_time = time.perf_counter()
+        last_activity_time = start_recording_time
+
+        print("Начало записи...")
+
+        while True:
+            if is_recording:
+                audio_frame = self.recorder.read()
+                frames.append(np.array(audio_frame, dtype=np.int16))
+
+                activity = self.cobra.process(audio_frame)
+                current_time = time.perf_counter()
+
+                if activity >= self.STOP_THRESHOLD:
+                    # Refresh timer if voice still active
+                    last_activity_time = current_time
+
+                if current_time - last_activity_time > self.SILENCE_DURATION:
+                    #   =========================================
+                    #   Send and Transcribe
+                    #   =========================================
+                    start_time = time.perf_counter()
+                    player.music.play()
+                    print("Запись остановлена (тишина)")
+                    self._save_audio(frames)
+                    transcribed_text = self.stt.transcribe(self.output_file)
+                    print(transcribed_text)
+                    self.recorder.stop()
+                    for chunk_response in self.llm.generate_response(transcribed_text):
+                        print("Chunk sent: ", chunk_response)
+                        player.music.stop()
+                        print("Full time: ", time.perf_counter() - start_time, "sec")
+                        self.tts.synthesize(chunk_response)
+                    self.recorder.start()
+                    is_recording = 0
+                    start_recording_time = time.perf_counter()
+            else:
+                if time.perf_counter() - start_recording_time > self.MAX_RECORDING_TIME:
+                    print("Session end. Say Arif to speak again")
+                    break
+                # Инициализация фреймов при первой итерации
+                if is_first_iter:
+                    frames = [
+                        np.array(self.recorder.read(), dtype=np.int16)
+                        for _ in range(int(self.porcupine.sample_rate / self.porcupine.frame_length))
+                    ]
+                    is_first_iter = 0
+
+                # Чтение новых фреймов и удаление старых
+                audio_frame = self.recorder.read()
+                frames.append(np.array(audio_frame, dtype=np.int16))
+                frames.pop(0)
+
+                # Проверка на детекцию голоса
+                if self.cobra.process(audio_frame) >= self.STOP_THRESHOLD:
+                    print("voice activity detected.")
+                    last_activity_time = time.perf_counter()
+                    is_recording = 1
+                    is_first_iter = 1
+                    print("Начало записи...")
+
+    def run(self):
+        self.recorder.start()
+        try:
+            print("Начало прослушивания... ")
+            while True:
+                audio_frame = self.recorder.read()
+                keyword_index = self.porcupine.process(audio_frame)
+                if keyword_index == 0:
+                    playsound.playsound("audio_files/gretting.mp3")
+                    print("Salom dostim! Qanday yordam kerak?")
+                    self.voice_recording()
+        except KeyboardInterrupt:
+            print("Остановка...")
+        finally:
+            self._cleanup()
 
     @classmethod
     def create(cls, stt_type: str, llm_type: str, tts_type: str) -> 'Assistant':
@@ -25,8 +109,8 @@ class Assistant:
     @staticmethod
     def _create_stt(stt_type: str) -> BaseSTT:
         if stt_type == "whisper":
-            return WhisperSTT()
-        elif stt_type == "azure":
+            return WhisperSTT(openai_client)
+        elif stt_type == "mohirai":
             return UzbekVoiceSTT()
         else:
             raise ValueError(f"Unsupported STT type: {stt_type}")
@@ -42,8 +126,8 @@ class Assistant:
 
     @staticmethod
     def _create_tts(tts_type: str) -> BaseTTS:
-        if tts_type == "elevenlabs":
-            return ElevenLabsTTS()
+        if tts_type == "whisper":
+            return WhisperTTS(openai_client)
         elif tts_type == "azure":
             return AzureTTS()
         else:
@@ -51,8 +135,6 @@ class Assistant:
 
 
 # Example usage:
-# assistant = Assistant.create(stt_type="whisper", llm_type="openai", tts_type="elevenlabs")
-#
-# assistant.process_audio_input(audio_data)
-client = OpenAIGPT()
-client.generate_response("salom!")
+print("Initilization..")
+assistant = Assistant.create(stt_type="mohirai", llm_type="openai", tts_type="azure")
+assistant.run()

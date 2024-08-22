@@ -58,7 +58,7 @@ try:
         print(text)
         print("time: ", time.perf_counter() - start)
 
-        # # Generate audio and store it in a BytesIO object
+        # # Generate audio_files and store it in a BytesIO object
         # audio_data = io.BytesIO()
         # for chunk in tts_client.tts(text=text, voice_engine="PlayHT2.0-turbo", options=options):
         #     audio_data.write(chunk)
@@ -67,11 +67,11 @@ try:
         # # Reset the BytesIO object's position
         # audio_data.seek(0)
         #
-        # # Load the audio data with pydub
-        # audio = AudioSegment.from_mp3(audio_data)
+        # # Load the audio_files data with pydub
+        # audio_files = AudioSegment.from_mp3(audio_data)
         #
-        # # Play the audio
-        # play(audio)
+        # # Play the audio_files
+        # play(audio_files)
 
 finally:
     pass

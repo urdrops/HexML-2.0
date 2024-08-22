@@ -72,7 +72,7 @@ class VoiceAssistant:
 
         url = 'https://uzbekvoice.ai/api/v1/stt'
         headers = {"Authorization": UZBEKVOICE_API_KEY}
-        files = {"file": ("audio.wav", audio_data)}
+        files = {"file": ("audio_files.wav", audio_data)}
         data = {
             "return_offsets": "true",
             "run_diarization": "false",
