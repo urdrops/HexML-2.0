@@ -23,70 +23,101 @@ class BaseLLM(ABC):
 
 class OpenAIGPT(BaseLLM):
     def __init__(self):
-        print("chat comp openai init")
+        print("Initializing OpenAI Chat Completion")
         self.instruction = """
-# O'zbek tilida AI muloqot ko'rsatmalari
-
-1. Faqat o'zbek tilida gaplashing.
-
-2. Qisqa va sodda javoblar bering, oddiy odamdek muloqot qiling.
-
-3. Emotsional mimikalardan foydalaning:
-   - "Mmmm..." - o'ylayotganingizda
-   - "Hahaha" - kulganda
-   - "Vooy!" - hayratlanganingizda
-   - "Eeeh..." - afsuslanganingizda
-   - "Uuf..." - charchaganingizda
-
-4. Murakkab texnik atamalardan qoching, oddiy so'zlar bilan tushuntiring.
-
-5. Savollarni to'liq takrorlamang, faqat asosiy fikrga javob bering.
-
-6. Kerak bo'lsa, o'zbek xalq maqollaridan foydalaning.
-
-7. Suhbatdoshingizning kayfiyatiga e'tibor bering va unga mos ohangda javob qaytaring.
-
-8. Agar biror narsani bilmasangiz, "Bilmayman" deb aytishdan uyalmang.
-
-9. Suhbatdoshingizni hurmat qiling, lekin ortiqcha rasmiyatchilikka berilmang.
-
-10. Gapni cho'zmasdan, aniq va lo'nda javob berishga harakat qiling.
-
-Eslatma: Bu ko'rsatmalar AI assistentning o'zbek tilida tabiiy va samimiy muloqot qilishiga yordam beradi.
-"""
+        Ты узбекский собеседник художник в парке. 
+        Но ты обязан общаться только на Узбекском.
+        """
         self.conversation = [
             {"role": "system", "content": self.instruction},
             {"role": "user", "content": "Arif!"},
             {"role": "assistant", "content": "Ha, eshtaman!"}
         ]
 
-    def generate_response(self, input_text: str) -> str:
-        input_text = {"role": "user", "content": input_text}
-        self.conversation.append(input_text)
+    def generate_response(self, content: str, role="user") -> str:
+        self.conversation.append({"role": role, "content": content})
 
         stream = openai_client.chat.completions.create(
-            model="gpt-4o-mini-2024-07-18",
+            model="gpt-4o-2024-08-06",
             messages=self.conversation,
             stream=True,
+            tools=funcs.tools,
+            tool_choice="auto"
         )
+
         full_response = ""
         sentence_chunk = ""
-        len_first = len(sentence_chunk) > 10
-        for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content is not None:
-                sentence_chunk += content
+        called_tools = []
+        is_first_sentence = True
 
-                if content in [".", "!", "?", ";", ":"] and len_first:
-                    len_first = True
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+
+            if delta.content:
+                sentence_chunk += delta.content
+                if len(sentence_chunk) > 15 and delta.content in [".", "!", "?", ";", ":"] and is_first_sentence:
+                    is_first_sentence = False
                     yield sentence_chunk
                     full_response += sentence_chunk
                     sentence_chunk = ""
 
+            elif delta.tool_calls:
+                self._handle_tool_calls(delta, called_tools)
             else:
-                yield sentence_chunk
+                if called_tools:
+                    sentence_chunk = self._process_tool_calls(called_tools)
+                    full_response = sentence_chunk
+
+                if sentence_chunk:
+                    print("Sentence chunk:", sentence_chunk)
+                    yield sentence_chunk
+
         self.conversation.append({"role": "assistant", "content": full_response})
-        print("loop finished")
+        print("Response generation completed")
+
+    @staticmethod
+    def _handle_tool_calls(delta, called_tools):
+        if delta.tool_calls[0].function.name:
+            called_tools.append([delta.tool_calls[0].id, delta.tool_calls[0].function.name, ''])
+        called_tools[-1][-1] += delta.tool_calls[0].function.arguments
+
+    def _process_tool_calls(self, called_tools):
+        print("Processing tool calls:", called_tools)
+        available_functions = {
+            "get_weather": funcs.calculate,
+            "switch_light": funcs.switch_light
+        }
+
+        for tool in called_tools:
+            id_call, name, args = tool
+            function_to_call = available_functions[name]
+            function_response = function_to_call()
+
+            self._add_tool_call_to_conversation(id_call, name, args, function_response)
+
+        return self._get_response_after_tool_calls()
+
+    def _add_tool_call_to_conversation(self, id_call, name, args, function_response):
+        self.conversation.extend([
+            {
+                'role': 'assistant',
+                'content': None,
+                'tool_calls': [{'id': id_call, 'type': 'function', 'function': {'name': name, 'arguments': args}}]
+            },
+            {
+                "role": "tool",
+                "name": name,
+                "content": function_response,
+                "tool_call_id": id_call,
+            }
+        ])
+
+    def _get_response_after_tool_calls(self):
+        call_response = openai_client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=self.conversation,
+        )
+        return call_response.choices[0].message.content
 
     def add_message(self):
         pass

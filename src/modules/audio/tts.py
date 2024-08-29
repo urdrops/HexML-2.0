@@ -121,7 +121,7 @@ class AzureTTS:
 
     def _warm_up(self):
         """Выполняет 'прогрев' системы, синтезируя короткую фразу."""
-        warm_up_text = "Салом"
+        warm_up_text = "Asistent yoqildi"
         warm_up_ssml = self._create_ssml(warm_up_text, self.args.rate, self.args.pitch)
         self.speech_synthesizer.speak_ssml_async(warm_up_ssml).get()
         print("Система инициализирована и готова к быстрой работе.")

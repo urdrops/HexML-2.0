@@ -4,8 +4,8 @@ import serial
 
 class MechanicalEyes:
     # top left, bottom left, top right, bottom right
-    OPEN_EYES = [100, 70, 80, 110]
-    CLOSE_EYES = [60, 120, 120, 70]
+    OPEN_EYES: list[int] = [70, 100, 100, 70]
+    CLOSE_EYES: list[int] = [130, 50, 50, 130]
 
     def __init__(self):
         self.prev_angles_array = []
@@ -16,7 +16,7 @@ class MechanicalEyes:
             print(f"Error opening serial port: {e}")
             raise
 
-    def send_data(self, angles_array):
+    def send_data(self, angles_array: list[int]) -> None:
         if len(angles_array) != len(self.prev_angles_array):
             self.prev_angles_array = np.zeros(len(angles_array))
         np_arr1 = np.array(angles_array)

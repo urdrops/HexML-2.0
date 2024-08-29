@@ -1,4 +1,5 @@
 import os
+import random
 import time
 
 import cv2
@@ -178,6 +179,10 @@ class EyeTracker(BaseTracker):
         )
 
         self.face_locations = [(y, x + w, y + h, x) for (x, y, w, h) in face_locations]
+        if random.randint(1, 10) == 5:
+            self.eyes_control.send_data(self.eyes_control.CLOSE_EYES)
+            await asyncio.sleep(0.1)
+            self.eyes_control.send_data(self.eyes_control.OPEN_EYES)
 
         if self.face_locations:
             largest_face = max(self.face_locations, key=lambda face: (face[2] - face[0]) * (face[1] - face[3]))

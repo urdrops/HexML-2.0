@@ -6,6 +6,9 @@ from src.modules.audio.tts import BaseTTS, AzureTTS, WhisperTTS
 from src.modules.intelligence.llm import BaseLLM, OpenAIGPT, GroqLLM, openai_client
 import pygame.mixer as player
 import playsound
+from src.modules.vision.eye_controller import MechanicalEyes
+
+eye = MechanicalEyes
 
 player.init()
 player.music.load("audio_files/think.mp3")
@@ -44,7 +47,7 @@ class Assistant(AudioRecorder):
                     #   Send and Transcribe
                     #   =========================================
                     start_time = time.perf_counter()
-                    player.music.play()
+                    #player.music.play()
                     print("Запись остановлена (тишина)")
                     self._save_audio(frames)
                     transcribed_text = self.stt.transcribe(self.output_file)
@@ -52,9 +55,10 @@ class Assistant(AudioRecorder):
                     self.recorder.stop()
                     for chunk_response in self.llm.generate_response(transcribed_text):
                         print("Chunk sent: ", chunk_response)
-                        player.music.stop()
+                        #player.music.stop()
                         print("Full time: ", time.perf_counter() - start_time, "sec")
                         self.tts.synthesize(chunk_response)
+                        print("play end")
                     self.recorder.start()
                     is_recording = 0
                     start_recording_time = time.perf_counter()
