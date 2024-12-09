@@ -12,15 +12,16 @@ from collections import deque
 from typing import List, Tuple, Optional
 
 from src.modules.vision.base_tracker import BaseTracker
-from src.modules.vision.face_recognizer import SimpleFaceRecognizer, FaceRecognizer
+# from src.modules.vision.face_recognizer import SimpleFaceRecognizer, FaceRecognizer
 from src.modules.vision.motion_detector import MotionDetector
 from src.modules.vision.eye_controller import MechanicalEyes
 
 
 # Основной класс EyeTracker
 class EyeTracker(BaseTracker):
-    def __init__(self):
+    def __init__(self, context):
         self.eyes_control = MechanicalEyes()
+        self.context = context
         self.camera_id = 0
         self.frame_size = (1280, 720)
         self.camera: Optional[cv2.VideoCapture] = None
@@ -32,7 +33,7 @@ class EyeTracker(BaseTracker):
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         self.history = deque(maxlen=3)
-        self.face_recognizer: Optional[FaceRecognizer] = None
+        # self.face_recognizer: Optional[FaceRecognizer] = None
         self.motion_detector = MotionDetector(scale_factor=0.5, min_area=500)
         self.is_sleeping = False
 
@@ -41,8 +42,8 @@ class EyeTracker(BaseTracker):
         self.camera = cv2.VideoCapture(self.camera_id)
         self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
         self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
-        known_face_encodings, known_face_names = self._load_known_faces()
-        self.face_recognizer = SimpleFaceRecognizer(known_face_encodings, known_face_names)
+        # known_face_encodings, known_face_names = self._load_known_faces()
+        # self.face_recognizer = SimpleFaceRecognizer(known_face_encodings, known_face_names)
         print("EyeTracker initialized.")
 
     def _load_known_faces(self) -> Tuple[List[np.ndarray], List[str]]:
@@ -115,7 +116,7 @@ class EyeTracker(BaseTracker):
                 print("Failed to capture frame. Exiting.")
                 break
 
-            if not self.is_sleeping:
+            if not self.is_sleeping and self.context.request() != "sleep":
                 await self._process_frame(frame)
                 self._display_frame(frame)
             else:
@@ -179,19 +180,21 @@ class EyeTracker(BaseTracker):
         )
 
         self.face_locations = [(y, x + w, y + h, x) for (x, y, w, h) in face_locations]
-        if random.randint(1, 10) == 5:
-            self.eyes_control.send_data(self.eyes_control.CLOSE_EYES)
+        if random.randint(1, 25) == 5:
+            self.eyes_control.close_eyes()
             await asyncio.sleep(0.1)
-            self.eyes_control.send_data(self.eyes_control.OPEN_EYES)
+            self.eyes_control.open_eyes()
 
         if self.face_locations:
             largest_face = max(self.face_locations, key=lambda face: (face[2] - face[0]) * (face[1] - face[3]))
             self._update_focus_point(largest_face)
 
-            current_time = time.time()
-            if current_time - self.last_recognition_time >= self.recognition_interval:
-                self.current_speaker = await self.face_recognizer.recognize(frame, [largest_face])
-                self.last_recognition_time = current_time
+            self.last_recognition_time = time.time()
+
+            # current_time = time.time()
+            # if current_time - self.last_recognition_time >= self.recognition_interval:
+            #     self.current_speaker = await self.face_recognizer.recognize(frame, [largest_face])
+            #     self.last_recognition_time = current_time
 
             self._draw_face_info(frame, largest_face)
         elif time.time() - self.last_recognition_time >= 3:

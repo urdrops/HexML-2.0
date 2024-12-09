@@ -13,14 +13,14 @@ class AudioRecorder:
     def __init__(self):
         self.porcupine = pvporcupine.create(
             access_key=ACCESS_KEY,
-            keyword_paths=['pv_files/arif.ppn'],
-            model_path='pv_files/porcupine_params_ar.pv'
+            keyword_paths=['core/pv_files/arif.ppn'],
+            model_path='core/pv_files/porcupine_params_ar.pv'
         )
         self.recorder = PvRecorder(device_index=-1, frame_length=self.porcupine.frame_length)
         self.cobra = pvcobra.create(access_key=ACCESS_KEY)
 
         self.channels = 1
-        self.output_file = "audio_files/recording.wav"
+        self.output_file = "core/audio_files/recording.wav"
         self.sample_rate = self.porcupine.sample_rate
 
         self.STOP_THRESHOLD = 0.9

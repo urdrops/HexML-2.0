@@ -1,38 +1,36 @@
 import asyncio
-import random
 import threading
 
-from core.state import Context, ConcreteStateA, ConcreteStateB
+from core.state import Context, TalkState
 from modules.vision.eye_tracker import EyeTracker
+from src.core.assistant import Assistant
+from src.core.state import SleepState
 from src.modules.vision.eye_controller import MechanicalEyes
 
-
-async def blink(Eye_controller=MechanicalEyes):
-    while True:
-        if random.randint(1, 30) == 3:
-            Eye_controller.send_data(Eye_controller.CLOSE_EYES)
-            await asyncio.sleep(0.1)
-            Eye_controller.send_data(Eye_controller.OPEN_EYES)
+context = Context(SleepState())
+Eye_controller = MechanicalEyes()
+tracker = EyeTracker(context)
 
 
 async def main():
-    # print("test states:")
-    # context = Context(ConcreteStateA())
-    # context.request()  # Выведет: Handling request in State A
-    # context.set_state(ConcreteStateB())
-    # context.request()  # Выведет: Handling request in State B
-
-    tracker = EyeTracker()
     try:
         await tracker.initialize()
-        thread = threading.Thread(target=blink)
-        thread.start()
+
         await tracker.track()
+
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
+        Eye_controller.send_data(Eye_controller.CLOSE_EYES)
         await tracker.shutdown()
 
 
 if __name__ == "__main__":
+
+    # Example usage:
+    print("Initilization..")
+    assistant = Assistant.create(stt_type="mohirai", llm_type="openai", tts_type="azure")
+    assis_thread = threading.Thread(target=assistant.run, args=[context, TalkState])
+    assis_thread.start()
+
     asyncio.run(main())

@@ -27,12 +27,10 @@ class MechanicalEyes:
             data_string = ','.join(str(angle) for angle in angles_array) + '\n'
             try:
                 self.ser.write(data_string.encode())
-                print("Data sent")
                 self.prev_angles_array = angles_array
             except serial.SerialException as e:
                 print(f"Error sending data: {e}")
         else:
-            print("skip data")
             return
 
     @staticmethod

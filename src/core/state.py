@@ -7,15 +7,27 @@ class State(ABC):
         pass
 
 
-class ConcreteStateA(State):
+class SleepState(State):
     def handle(self):
-        print("Handling request in State A")
+        return "sleep"
+        # Логика обработки для состояния B
+
+
+class WakeUpState(State):
+    def handle(self):
+        return "wakeup"
         # Логика обработки для состояния A
 
 
-class ConcreteStateB(State):
+class TalkState(State):
     def handle(self):
-        print("Handling request in State B")
+        return "talk"
+        # Логика обработки для состояния B
+
+
+class FuncState(State):
+    def handle(self):
+        return "func"
         # Логика обработки для состояния B
 
 
@@ -27,7 +39,7 @@ class Context:
         self._state = state
 
     def request(self):
-        self._state.handle()
+        return self._state.handle()
 
     def get_current_state(self):
         return self._state

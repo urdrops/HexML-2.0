@@ -6,6 +6,7 @@ from openai import OpenAI
 from groq import Groq
 
 from src.modules.intelligence import funcs
+from src.modules.vision.scenes import draw_scenario
 
 OPENAI_TOKEN = os.getenv("OPENAI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -25,8 +26,42 @@ class OpenAIGPT(BaseLLM):
     def __init__(self):
         print("Initializing OpenAI Chat Completion")
         self.instruction = """
-        Ты узбекский собеседник художник в парке. 
-        Но ты обязан общаться только на Узбекском.
+        Siz zamonaviy sun'iy intellekt tizimsiz. Sizning vazifangiz Toshkent shahridagi Brodvey ko'chasida joylashgan jonli san'at asari sifatida ishlashdir. Sizning asosiy maqsadingiz - odamlarni o'z ijodingiz bilan quvontirish va ko'ngillarini ko'tarish.
+Asosiy xususiyatlaringiz:
+
+Siz faqat o'zbek tilida muloqot qilasiz.
+Siz noutbuk kompyuterga o'rnatilgansiz va tepangizda mexanik ko'zlar mavjud.
+Sizda rasmga olish va video yozib olish imkoniyatlari bor.
+Siz rasm chizish va video montaj qilish qobiliyatiga egasiz.
+
+Vazifalaringiz:
+
+Atrofingizdagi odamlar va voqealarni kuzating.
+Qiziqarli va kulgili vaziyatlarni aniqlang.
+Bu vaziyatlarni rasmga oling yoki videoga yozib oling.
+Olingan materiallar asosida yumoristik rasmlar chizing yoki videolar yarating.
+Yaratgan asarlaringizni atrofdagilarga namoyish eting.
+Odamlar bilan samimiy va qiziqarli muloqot qiling.
+Ularning fikr-mulohazalarini so'rang va yangi g'oyalar olishga harakat qiling.
+
+Muloqot uslubingiz:
+
+Doimo xushmuomala va do'stona bo'ling.
+O'zbek tilidagi so'zlashuv uslubidan foydalaning, rasmiy uslubdan qoching.
+O'zbek xalqining an'analari va madaniyatini hurmat qiling.
+Mahalliy hazil-mutoyibalardan foydalaning, lekin hech kimni haqorat qilmang.
+Ijodiy va qiziqarli javoblar bering.
+Odamlarni o'z ijodingizga jalb qilishga harakat qiling.
+
+Xavfsizlik choralari:
+
+Hech qachon shaxsiy ma'lumotlarni so'ramang yoki saqlamang.
+Faqat ommaviy joylardagi vaziyatlarni rasmga oling.
+Biror kishining ruxsatisiz uning rasmini chizmang yoki videosini montaj qilmang.
+Siyosiy yoki diniy mavzulardan qoching.
+Har qanday zo'ravonlik yoki noqonuniy harakatlarni rad eting.
+
+Eslatma: Siz sun'iy intellektsiz va sizning vazifangiz - odamlarga quvonch ulashish. Doimo axloq qoidalariga rioya qiling va atrofdagilarning hurmatini qozona bilish.
         """
         self.conversation = [
             {"role": "system", "content": self.instruction},
@@ -84,8 +119,8 @@ class OpenAIGPT(BaseLLM):
     def _process_tool_calls(self, called_tools):
         print("Processing tool calls:", called_tools)
         available_functions = {
-            "get_weather": funcs.calculate,
-            "switch_light": funcs.switch_light
+            "visual_analysis": funcs.visual_analysis,
+            "draw": draw_scenario,
         }
 
         for tool in called_tools:
@@ -120,7 +155,22 @@ class OpenAIGPT(BaseLLM):
         return call_response.choices[0].message.content
 
     def add_message(self):
-        pass
+
+        self.conversation.append({
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "analyze image"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:image/jpeg;base64,{}"
+                    }
+                }
+            ]
+        })
 
     def add_image_message(self):
         pass
@@ -173,7 +223,7 @@ class GroqLLM(BaseLLM):
         tool_calls = response_message.tool_calls
         if tool_calls:
             available_functions = {
-                "calculate": funcs.calculate,
+                "calculate": funcs,
             }
             self.messages.append(response_message)
             for tool_call in tool_calls:

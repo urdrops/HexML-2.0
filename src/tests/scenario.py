@@ -1,0 +1,32 @@
+import time
+
+from src.modules.vision.eye_controller import MechanicalEyes
+
+eyes = MechanicalEyes()
+time.sleep(2)
+eyes.open_eyes()
+time.sleep(0.1)
+eyes.close_eyes()
+time.sleep(0.1)
+eyes.open_eyes()
+time.sleep(0.5)
+eyes.close_eyes()
+eyes.send_data([130, 90])
+time.sleep(0.1)
+eyes.open_eyes()
+time.sleep(0.5)
+eyes.close_eyes()
+eyes.send_data([50, 90])
+time.sleep(0.1)
+eyes.open_eyes()
+time.sleep(0.5)
+eyes.close_eyes()
+time.sleep(0.1)
+eyes.open_eyes()
+time.sleep(0.2)
+eyes.close_eyes()
+time.sleep(0.1)
+eyes.open_eyes()
+time.sleep(0.2)
+eyes.send_data([90, 90])
+

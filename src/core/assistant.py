@@ -1,17 +1,18 @@
 import time
 import numpy as np
-from mic_loop import AudioRecorder
+from src.core.mic_loop import AudioRecorder
 from src.modules.audio.stt import BaseSTT, WhisperSTT, UzbekVoiceSTT
 from src.modules.audio.tts import BaseTTS, AzureTTS, WhisperTTS
 from src.modules.intelligence.llm import BaseLLM, OpenAIGPT, GroqLLM, openai_client
 import pygame.mixer as player
 import playsound
 from src.modules.vision.eye_controller import MechanicalEyes
+from src.modules.vision.scenes import wakeup
 
 eye = MechanicalEyes
 
 player.init()
-player.music.load("audio_files/think.mp3")
+player.music.load("core/audio_files/think.mp3")
 
 
 class Assistant(AudioRecorder):
@@ -47,7 +48,7 @@ class Assistant(AudioRecorder):
                     #   Send and Transcribe
                     #   =========================================
                     start_time = time.perf_counter()
-                    #player.music.play()
+                    # player.music.play()
                     print("Запись остановлена (тишина)")
                     self._save_audio(frames)
                     transcribed_text = self.stt.transcribe(self.output_file)
@@ -55,7 +56,7 @@ class Assistant(AudioRecorder):
                     self.recorder.stop()
                     for chunk_response in self.llm.generate_response(transcribed_text):
                         print("Chunk sent: ", chunk_response)
-                        #player.music.stop()
+                        # player.music.stop()
                         print("Full time: ", time.perf_counter() - start_time, "sec")
                         self.tts.synthesize(chunk_response)
                         print("play end")
@@ -87,7 +88,7 @@ class Assistant(AudioRecorder):
                     is_first_iter = 1
                     print("Начало записи...")
 
-    def run(self):
+    def run(self, context, TalkState):
         self.recorder.start()
         try:
             print("Начало прослушивания... ")
@@ -95,9 +96,13 @@ class Assistant(AudioRecorder):
                 audio_frame = self.recorder.read()
                 keyword_index = self.porcupine.process(audio_frame)
                 if keyword_index == 0:
-                    playsound.playsound("audio_files/gretting.mp3")
+                    wakeup()
+                    context.set_state(TalkState())
+                    playsound.playsound("core/audio_files/gretting.mp3")
                     print("Salom dostim! Qanday yordam kerak?")
+
                     self.voice_recording()
+
         except KeyboardInterrupt:
             print("Остановка...")
         finally:
@@ -136,9 +141,3 @@ class Assistant(AudioRecorder):
             return AzureTTS()
         else:
             raise ValueError(f"Unsupported TTS type: {tts_type}")
-
-
-# Example usage:
-print("Initilization..")
-assistant = Assistant.create(stt_type="mohirai", llm_type="openai", tts_type="azure")
-assistant.run()

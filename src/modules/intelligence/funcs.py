@@ -2,44 +2,28 @@ import json
 import os
 
 tools = [
+    # {
+    #     "type": "function",
+    #     "function": {
+    #         "name": "visual_analysis",
+    #         "description": "Get descriptions of what the camera sees. (ability to see)",
+    #     }
+    # },
     {
         "type": "function",
         "function": {
-            "name": "get_weather",
-            "description": "Get the current weather in a given location",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "The city and state, e.g. San Francisco, CA",
-                    },
-                    "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
-                },
-                "required": ["location"],
-            },
+            "name": "draw",
+            "description": "To draw as fun users with AI.",
         }
-    },
-    {
-            "type": "function",
-            "function": {
-                "name": "switch_light",
-                "description": "switch room light on",
-            }
-        }
+    }
 ]
 
 
-def calculate():
+def visual_analysis():
     """Evaluate a mathematical expression"""
     try:
         print("ETOT DALBAEB CALL FUNC")
         return json.dumps({"result": "24 C"})
-
     except:
-        return json.dumps({"error": "Invalid expression"})
+        return json.dumps({"result": "error to camera"})
 
-
-def switch_light():
-    print("Light on")
-    return json.dumps({"result": "light turn on"})
